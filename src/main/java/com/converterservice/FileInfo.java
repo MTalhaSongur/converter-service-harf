@@ -1,4 +1,4 @@
-package com.drawchat.converterservice;
+package com.converterservice;
 
 
 //This class represents model for Files

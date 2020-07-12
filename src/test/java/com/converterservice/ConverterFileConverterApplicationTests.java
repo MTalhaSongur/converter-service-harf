@@ -1,4 +1,4 @@
-package com.drawchat.converterservice;
+package com.converterservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

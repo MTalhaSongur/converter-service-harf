@@ -1,10 +1,9 @@
-package com.drawchat.converterservice;
+package com.converterservice;
 
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;

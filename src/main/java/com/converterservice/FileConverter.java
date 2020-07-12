@@ -1,4 +1,4 @@
-package com.drawchat.converterservice;
+package com.converterservice;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -38,7 +38,7 @@ public class FileConverter {
     private final long ID;
 
     public FileConverter() {
-        ID = getRandomNumber(100000, 999999);
+        ID = getRandomNumber(10000000, 99999999);
     }
 
     public long getID() {
@@ -178,7 +178,7 @@ public class FileConverter {
             try {
                 slides.get(i).draw(graphics);
             }catch (Exception e) {
-                //Just Ignore
+                //Just Ignore. For some reason Apache POI throws an exception everytime it finishes rendering a page.
             }
 
             File outputfile = new File(targetFolder + "/" + (i + 1) +".png");

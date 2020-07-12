@@ -1,4 +1,4 @@
-package com.drawchat.converterservice;
+package com.converterservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
