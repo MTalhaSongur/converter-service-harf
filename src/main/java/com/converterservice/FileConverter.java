@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import com.objects.JSONManifest;
+import com.objects.Pages;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -113,7 +115,7 @@ public class FileConverter {
         writer.close();
     }
 
-    public void PDF2PNG(String sourceFilePath, String targetFolder) throws Exception {
+    public void PDF2PNG(String sourceFilePath, String targetFolder, String path) throws Exception {
         File sourceFile = new File(sourceFilePath);
         File destinationFile = new File(targetFolder);
         if(!destinationFile.exists()) {
@@ -135,6 +137,10 @@ public class FileConverter {
 
         out.println("Total files to be converted -> "+ list.size());
 
+        JSONManifest jsonManifest = new JSONManifest();
+        initiateJSONManifest(jsonManifest, ID, path, pageSize);
+        jsonManifest.sendJSON();
+
         String fileName = sourceFile.getName().replace(".pdf", "");
         int pageNumber = 1;
         for (PDPage page : list) {
@@ -142,13 +148,16 @@ public class FileConverter {
             File outputfile = new File(targetFolder + "/" + pageNumber +".png");
             out.println("Image Created -> "+ outputfile.getName());
             ImageIO.write(image, "png", outputfile);
+            jsonManifest.updatePagePath(pageNumber - 1, outputfile.getAbsolutePath());
+            jsonManifest.updateIsDone(pageNumber - 1, true);
             pageNumber++;
+            jsonManifest.sendJSON();
         }
         document.close();
         out.println("Converted Images are saved at -> "+ destinationFile.getAbsolutePath());
     }
 
-    public void PPTX2PNG(InputStream inStream, String targetFolder) throws Exception {
+    public void PPTX2PNG(InputStream inStream, String targetFolder, String path) throws Exception {
         XMLSlideShow ppt = new XMLSlideShow(inStream);
         inStream.close();
 
@@ -166,6 +175,12 @@ public class FileConverter {
         slides = ppt.getSlides();
         //get the number of slides
         setPageSize(slides.size());
+
+        //Set the json manifest and send it before any pages are actually rendered.
+        JSONManifest jsonManifest = new JSONManifest();
+        initiateJSONManifest(jsonManifest, ID, path, slides.size());
+        jsonManifest.sendJSON();
+
         for (int i = 0; i < slides.size(); i++) {
             BufferedImage img = new BufferedImage((int)Math.ceil(pgsize.width*zoom), (int)Math.ceil(pgsize.height*zoom), BufferedImage.TYPE_INT_RGB);
             Graphics2D graphics = img.createGraphics();
@@ -178,12 +193,15 @@ public class FileConverter {
             try {
                 slides.get(i).draw(graphics);
             }catch (Exception e) {
-                //Just Ignore. For some reason Apache POI throws an exception everytime it finishes rendering a page.
+                //Just Ignore. For some reason Apache POI throws an exception every time it finishes rendering a page.
             }
 
             File outputfile = new File(targetFolder + "/" + (i + 1) +".png");
             out.println("Image Created -> "+ outputfile.getName());
             ImageIO.write(img, "png", outputfile);
+            jsonManifest.updateIsDone(i, true);
+            jsonManifest.updatePagePath(i, outputfile.getAbsolutePath());
+            jsonManifest.sendJSON();
         }
         out.println("Converted Images are saved at -> "+ targetFolder);
     }
@@ -197,6 +215,17 @@ public class FileConverter {
         file = new File(filesLoc.toString() + "/outputs/pdf");
         status = file.mkdirs();
         return status;
+    }
+
+    private void initiateJSONManifest(JSONManifest jsonManifest, long id, String path, int pageSize) {
+        jsonManifest.setDocumentPath(path);
+        jsonManifest.setId(id);
+
+        for(int i = 0; i < pageSize; i++) {
+            Pages page = new Pages();
+            page.setPageNumber(i);
+            jsonManifest.addToPages(page);
+        }
     }
 
     private Dimension processSlides() throws IOException{

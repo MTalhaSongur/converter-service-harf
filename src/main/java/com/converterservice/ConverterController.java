@@ -1,5 +1,10 @@
 package com.converterservice;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.objects.JSONManifest;
+import com.objects.Pages;
+import org.apache.commons.compress.compressors.FileNameUtil;
+import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
@@ -19,8 +24,15 @@ public class ConverterController {
             return "ERROR : No body received!! Cannot Convert Image";
 
         req = req.split("=")[1];
-
         String decodedBody = getBase64Decoded(req);
+
+        String extension;
+        int i = req.lastIndexOf('.');
+        if (i >= 0) {
+            extension = req.substring(i+1);
+            System.out.println("Extension from : " + req + " is : " + extension);
+        }
+
         FileConverter converter = new FileConverter();
         try {
             //Generate folders based on randomID
@@ -31,7 +43,7 @@ public class ConverterController {
             //Uncomment if you want to convert to PDF or convert to PNG from PDF
 //            converter.PPTX2PDF(new FileInputStream(decodedBody), new FileOutputStream(rootLocation.resolve("outputs/pdf/" + converter.getID() + "/out.pdf").toString()));
 //            converter.PDF2PNG(rootLocation.resolve("outputs/pdf/" + converter.getID() + "/out.pdf").toString(), rootLocation.resolve("outputs/images/" + converter.getID()).toString());
-            converter.PPTX2PNG(new FileInputStream(decodedBody),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString());
+            converter.PPTX2PNG(new FileInputStream(decodedBody),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString(), decodedBody);
 
         }catch (Exception e){
             return e.toString();
@@ -42,6 +54,8 @@ public class ConverterController {
 
     @GetMapping("/convertdefault")
     public String convertDefault() throws Exception {
+
+        //constructAndSendJSON();
         FileConverter converter = new FileConverter();
         try {
             //Generate folders based on randomID
@@ -52,7 +66,7 @@ public class ConverterController {
             //Uncomment if you want to convert to PDF or convert to PNG from PDF
 //            converter.PPTX2PDF(new FileInputStream(rootLocation.resolve("inputs/deneme.pptx").toString()), new FileOutputStream(rootLocation.resolve("outputs/pdf/" + converter.getID() + "/out.pdf").toString()));
 //            converter.PDF2PNG(rootLocation.resolve("outputs/pdf/" + converter.getID() + "/out.pdf").toString(), rootLocation.resolve("outputs/images/" + converter.getID()).toString());
-            converter.PPTX2PNG(new FileInputStream(rootLocation.resolve("inputs/deneme.pptx").toString()),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString());
+            converter.PPTX2PNG(new FileInputStream(rootLocation.resolve("inputs/deneme.pptx").toString()),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString(), rootLocation.resolve("inputs/deneme.pptx").toString());
         }catch (Exception e){
             return e.toString();
         }
