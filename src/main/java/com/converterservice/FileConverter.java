@@ -130,6 +130,7 @@ public class FileConverter {
         out.println("Images copied to Folder: "+ destinationFile.getName());
         PDDocument document = PDDocument.load(sourceFilePath);
         List<PDPage> list = document.getDocumentCatalog().getAllPages();
+
         //GET IMAGE WIDTH AND HEIGHT
         setWidth(list.get(0).convertToImage().getWidth());
         setHeight(list.get(0).convertToImage().getHeight());
@@ -141,7 +142,6 @@ public class FileConverter {
         initiateJSONManifest(jsonManifest, ID, path, pageSize);
         jsonManifest.sendJSON();
 
-        String fileName = sourceFile.getName().replace(".pdf", "");
         int pageNumber = 1;
         for (PDPage page : list) {
             BufferedImage image = page.convertToImage();
@@ -203,6 +203,7 @@ public class FileConverter {
             jsonManifest.updatePagePath(i, outputfile.getAbsolutePath());
             jsonManifest.sendJSON();
         }
+
         out.println("Converted Images are saved at -> "+ targetFolder);
     }
 

@@ -35,14 +35,7 @@ public class ConverterController {
 
         FileConverter converter = new FileConverter();
         try {
-            //Generate folders based on randomID
-            //Uncomment this if you want to use the PPTX2PDF func.
-            //generateOutputFolder(rootLocation.resolve("outputs/pdf/").toString(), Long.toString(converter.getID()));
             generateOutputFolder(rootLocation.resolve("outputs/images/").toString(), Long.toString(converter.getID()));
-            //--
-            //Uncomment if you want to convert to PDF or convert to PNG from PDF
-//            converter.PPTX2PDF(new FileInputStream(decodedBody), new FileOutputStream(rootLocation.resolve("outputs/pdf/" + converter.getID() + "/out.pdf").toString()));
-//            converter.PDF2PNG(rootLocation.resolve("outputs/pdf/" + converter.getID() + "/out.pdf").toString(), rootLocation.resolve("outputs/images/" + converter.getID()).toString());
             converter.PPTX2PNG(new FileInputStream(decodedBody),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString(), decodedBody);
 
         }catch (Exception e){
@@ -58,14 +51,7 @@ public class ConverterController {
         //constructAndSendJSON();
         FileConverter converter = new FileConverter();
         try {
-            //Generate folders based on randomID
-            //Uncomment this if you want to use the PPTX2PDF func.
-            //generateOutputFolder(rootLocation.resolve("outputs/pdf/").toString(), Long.toString(converter.getID()));
             generateOutputFolder(rootLocation.resolve("outputs/images/").toString(), Long.toString(converter.getID()));
-            //--
-            //Uncomment if you want to convert to PDF or convert to PNG from PDF
-//            converter.PPTX2PDF(new FileInputStream(rootLocation.resolve("inputs/deneme.pptx").toString()), new FileOutputStream(rootLocation.resolve("outputs/pdf/" + converter.getID() + "/out.pdf").toString()));
-//            converter.PDF2PNG(rootLocation.resolve("outputs/pdf/" + converter.getID() + "/out.pdf").toString(), rootLocation.resolve("outputs/images/" + converter.getID()).toString());
             converter.PPTX2PNG(new FileInputStream(rootLocation.resolve("inputs/deneme.pptx").toString()),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString(), rootLocation.resolve("inputs/deneme.pptx").toString());
         }catch (Exception e){
             return e.toString();
