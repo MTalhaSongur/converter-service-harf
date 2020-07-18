@@ -13,6 +13,8 @@ import java.util.List;
 
 import com.objects.JSONManifest;
 import com.objects.Pages;
+import fr.opensagres.poi.xwpf.converter.pdf.PdfConverter;
+import fr.opensagres.poi.xwpf.converter.pdf.PdfOptions;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -22,6 +24,7 @@ import com.itextpdf.text.Document;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.PdfWriter;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.util.FileSystemUtils;
 
 import javax.imageio.ImageIO;
@@ -115,7 +118,7 @@ public class FileConverter {
         writer.close();
     }
 
-    public void PDF2PNG(String sourceFilePath, String targetFolder, String path) throws Exception {
+    public void PDF2PNG(String sourceFilePath, String targetFolder) throws Exception {
         File sourceFile = new File(sourceFilePath);
         File destinationFile = new File(targetFolder);
         if(!destinationFile.exists()) {
@@ -134,13 +137,15 @@ public class FileConverter {
         //GET IMAGE WIDTH AND HEIGHT
         setWidth(list.get(0).convertToImage().getWidth());
         setHeight(list.get(0).convertToImage().getHeight());
-        //
+        //-
 
         out.println("Total files to be converted -> "+ list.size());
 
+        //Prepare the json file for rest response.
         JSONManifest jsonManifest = new JSONManifest();
-        initiateJSONManifest(jsonManifest, ID, path, pageSize);
+        initiateJSONManifest(jsonManifest, ID, sourceFilePath, pageSize);
         jsonManifest.sendJSON();
+        //-
 
         int pageNumber = 1;
         for (PDPage page : list) {
@@ -157,8 +162,8 @@ public class FileConverter {
         out.println("Converted Images are saved at -> "+ destinationFile.getAbsolutePath());
     }
 
-    public void PPTX2PNG(InputStream inStream, String targetFolder, String path) throws Exception {
-        XMLSlideShow ppt = new XMLSlideShow(inStream);
+    public void PPTX2PNG(String path, String targetFolder) throws Exception {
+        XMLSlideShow ppt = new XMLSlideShow(new FileInputStream(path));
         inStream.close();
 
         double zoom = 2; // MAGNIFIER
@@ -205,6 +210,22 @@ public class FileConverter {
         }
 
         out.println("Converted Images are saved at -> "+ targetFolder);
+    }
+
+    public void DOCX2PDF(String docPath, String pdfPath) {
+        //Get the input file name.
+        Path inputPath = Paths.get(docPath);
+        String fileName = inputPath.getFileName().toString().substring(0, inputPath.getFileName().toString().lastIndexOf('.'));
+        pdfPath = pdfPath + File.separator + fileName + ".pdf";
+        try {
+            InputStream doc = new FileInputStream(docPath);
+            XWPFDocument document = new XWPFDocument(doc);
+            PdfOptions options = PdfOptions.create();
+            OutputStream out = new FileOutputStream(new File(pdfPath));
+            PdfConverter.getInstance().convert(document, out, options);
+        } catch (IOException ex) {
+            System.err.println(ex.getMessage());
+        }
     }
 
     public boolean resetFiles() {

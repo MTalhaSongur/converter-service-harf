@@ -1,14 +1,8 @@
 package com.converterservice;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.objects.JSONManifest;
-import com.objects.Pages;
-import org.apache.commons.compress.compressors.FileNameUtil;
-import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
@@ -26,23 +20,44 @@ public class ConverterController {
         req = req.split("=")[1];
         String decodedBody = getBase64Decoded(req);
 
-        String extension;
+        String extension = null;
         int i = req.lastIndexOf('.');
         if (i >= 0) {
             extension = req.substring(i+1);
             System.out.println("Extension from : " + req + " is : " + extension);
         }
+        else
+            return "Error: No extension detected.";
 
         FileConverter converter = new FileConverter();
         try {
+            generateOutputFolder(rootLocation.toString(), "outputs");
+            generateOutputFolder(rootLocation.resolve("outputs").toString(), "images");
             generateOutputFolder(rootLocation.resolve("outputs/images/").toString(), Long.toString(converter.getID()));
-            converter.PPTX2PNG(new FileInputStream(decodedBody),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString(), decodedBody);
+            switch (extension) {
+                case "pptx":
+                    converter.PPTX2PNG(decodedBody,rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString());
+                    break;
+                case "pdf":
+                    converter.PDF2PNG(decodedBody, rootLocation.resolve("outputs/images/" + converter.getID()).toString());
+                    break;
+                case "docx":
+                    //Sloppy way of converting docx files to pdf and will take longer. However, Apache POI cant do this alone and other libraries requires MS word to be installed on the runner machine.
+                    generateOutputFolder(rootLocation.resolve("outputs").toString(), "pdfs");
+                    generateOutputFolder(rootLocation.resolve("outputs/pdfs/").toString(), Long.toString(converter.getID()));
+                    converter.DOCX2PDF(decodedBody, rootLocation.resolve("outputs/pdfs/" + converter.getID()).toString());
+                    converter.PDF2PNG(rootLocation.resolve("outputs/pdfs/" + converter.getID()).toString(), rootLocation.resolve("outputs/images/" + converter.getID()).toString());
+                    break;
+                default:
+                    return "Error: Extension : + " + extension + " is not recognized.";
+            }
 
         }catch (Exception e){
             return e.toString();
         }
 
-        return "path:" + rootLocation.resolve("outputs/images").toAbsolutePath() + "/" + Long.toString(converter.getID()) + ",size:" + converter.getPageSize() + ",width:" + converter.getWidth() + ",height:" + converter.getHeight();
+        //return "path:" + rootLocation.resolve("outputs/images").toAbsolutePath() + "/" + Long.toString(converter.getID()) + ",size:" + converter.getPageSize() + ",width:" + converter.getWidth() + ",height:" + converter.getHeight();
+        return "DONE";
     }
 
     @GetMapping("/convertdefault")
@@ -51,13 +66,19 @@ public class ConverterController {
         //constructAndSendJSON();
         FileConverter converter = new FileConverter();
         try {
+            generateOutputFolder(rootLocation.toString(), "outputs");
+            generateOutputFolder(rootLocation.resolve("outputs").toString(), "images");
             generateOutputFolder(rootLocation.resolve("outputs/images/").toString(), Long.toString(converter.getID()));
-            converter.PPTX2PNG(new FileInputStream(rootLocation.resolve("inputs/deneme.pptx").toString()),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString(), rootLocation.resolve("inputs/deneme.pptx").toString());
+            generateOutputFolder(rootLocation.resolve("outputs").toString(), "pdfs");
+            generateOutputFolder(rootLocation.resolve("outputs/pdfs/").toString(), Long.toString(converter.getID()));
+            converter.DOCX2PDF(rootLocation.resolve("inputs/deneme.docx").toString(), rootLocation.resolve("outputs/pdfs/" + converter.getID()).toString());
+            converter.PDF2PNG(rootLocation.resolve("outputs/pdfs/" + converter.getID()).toString(), rootLocation.resolve("outputs/images/" + converter.getID() + "/").toString());
+            //converter.PPTX2PNG(rootLocation.resolve("inputs/deneme.pptx").toString(),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString());
         }catch (Exception e){
             return e.toString();
         }
 
-        return "path:" + rootLocation.resolve("outputs/images").toAbsolutePath() + "/" + Long.toString(converter.getID()) + ",size:" + converter.getPageSize() + ",width:" + converter.getWidth() + ",height:" + converter.getHeight();
+        return "path:" + rootLocation.resolve("outputs/images").toAbsolutePath() + "/" + converter.getID() + ",size:" + converter.getPageSize() + ",width:" + converter.getWidth() + ",height:" + converter.getHeight();
     }
 
     //Utilities-------------------------------------------------------------------
@@ -65,7 +86,8 @@ public class ConverterController {
     private boolean generateOutputFolder(String folder, String nameOfFolder) {
         try {
             File file = new File(folder + "/" + nameOfFolder);
-            file.mkdir();
+            if(!file.exists())
+                file.mkdir();
         }catch (Exception e) {
             return false;
         }
