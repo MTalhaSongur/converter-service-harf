@@ -19,11 +19,6 @@ import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Image;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.PdfWriter;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.util.FileSystemUtils;
 
@@ -75,6 +70,7 @@ public class FileConverter {
     }
 
 
+    /* Commented after taking out itext as dependency. Include it again in pom.xml if you want to use this function.
     public void PPTX2PDF(InputStream inStream, OutputStream outStream) throws Exception {
         //TODO:Remnant from constructor. Remove the variables.
         this.inStream = inStream;
@@ -117,8 +113,10 @@ public class FileConverter {
         document.close();
         writer.close();
     }
+     */
 
     public void PDF2PNG(String sourceFilePath, String targetFolder) throws Exception {
+        sourceFilePath = sourceFilePath + ".pdf";
         File sourceFile = new File(sourceFilePath);
         File destinationFile = new File(targetFolder);
         if(!destinationFile.exists()) {
@@ -140,6 +138,9 @@ public class FileConverter {
         //-
 
         out.println("Total files to be converted -> "+ list.size());
+
+        //Set the page size
+        setPageSize(list.size());
 
         //Prepare the json file for rest response.
         JSONManifest jsonManifest = new JSONManifest();
@@ -245,7 +246,7 @@ public class FileConverter {
 
         for(int i = 0; i < pageSize; i++) {
             Pages page = new Pages();
-            page.setPageNumber(i);
+            page.setPageNumber(i + 1);
             jsonManifest.addToPages(page);
         }
     }
