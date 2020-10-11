@@ -18,6 +18,7 @@ public class Pages {
     }
 
     public void setPagePath(String pagePath) {
+        pagePath = pagePath.indexOf('\\') < 0 ? pagePath : pagePath.replace('\\', '/');
         this.pagePath = pagePath;
     }
 

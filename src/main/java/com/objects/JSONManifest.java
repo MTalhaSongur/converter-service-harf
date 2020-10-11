@@ -19,6 +19,7 @@ public class JSONManifest {
     }
 
     public void setDocumentPath(String documentName) {
+        documentName = documentName.indexOf('\\') < 0 ? documentName : documentName.replace('\\', '/');
         this.documentPath = documentName;
     }
 
@@ -65,11 +66,9 @@ public class JSONManifest {
         String jsonString = null;
         try {
             jsonString = objectMapper.writeValueAsString(this);
-            System.out.println(jsonString);
         }catch (JsonProcessingException e) {
             System.err.println(e.toString());
         }
-
 
     }
 

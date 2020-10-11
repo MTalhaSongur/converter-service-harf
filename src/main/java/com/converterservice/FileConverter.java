@@ -165,8 +165,8 @@ public class FileConverter {
 
     public void PPTX2PNG(String path, String targetFolder) throws Exception {
         XMLSlideShow ppt = new XMLSlideShow(new FileInputStream(path));
-        inStream.close();
-
+        if(inStream != null)
+            inStream.close();
         double zoom = 2; // MAGNIFIER
         AffineTransform at = new AffineTransform();
         at.setToScale(zoom, zoom);
