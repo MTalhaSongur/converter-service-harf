@@ -69,7 +69,5 @@ public class JSONManifest {
         }catch (JsonProcessingException e) {
             System.err.println(e.toString());
         }
-
     }
-
 }

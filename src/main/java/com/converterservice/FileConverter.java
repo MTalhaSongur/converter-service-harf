@@ -164,6 +164,18 @@ public class FileConverter {
     }
 
     public void PPTX2PNG(String path, String targetFolder) throws Exception {
+        File sourceFile = new File(path);
+        File destinationFile = new File(targetFolder);
+        if(!destinationFile.exists()) {
+            out.println("No folder detected at given path. Creating a new folder");
+            destinationFile.mkdir();
+            out.println("Folder Created  at-> "+ destinationFile.getAbsolutePath());
+        }
+        if(!sourceFile.exists()) {
+            System.err.println("ERROR : Source folder does not exists!!!");
+            return;
+        }
+
         XMLSlideShow ppt = new XMLSlideShow(new FileInputStream(path));
         if(inStream != null)
             inStream.close();
