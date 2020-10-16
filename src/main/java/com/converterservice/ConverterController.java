@@ -13,8 +13,8 @@ public class ConverterController {
     private final Path rootLocation = Paths.get("filestorage");
 
     @RequestMapping("/convert")
-    public String convert( @RequestBody String req) throws Exception {
-        if(req == null || req == "")
+    public String convert( @RequestBody String req) {
+        if(req == null || req.equals(""))
             return "ERROR : No body received!! Cannot Convert Image";
 
         req = req.split("=")[0];
@@ -58,11 +58,12 @@ public class ConverterController {
         }
 
         //return "path:" + rootLocation.resolve("outputs/images").toAbsolutePath() + "/" + Long.toString(converter.getID()) + ",size:" + converter.getPageSize() + ",width:" + converter.getWidth() + ",height:" + converter.getHeight();
+        converter = null;
         return "DONE";
     }
 
     @GetMapping("/convertdefault")
-    public String convertDefault() throws Exception {
+    public String convertDefault(){
 
         //constructAndSendJSON();
         FileConverter converter = new FileConverter();
@@ -84,15 +85,14 @@ public class ConverterController {
 
     //Utilities-------------------------------------------------------------------
 
-    private boolean generateOutputFolder(String folder, String nameOfFolder) {
+    private void generateOutputFolder(String folder, String nameOfFolder) {
         try {
             File file = new File(folder + "/" + nameOfFolder);
             if(!file.exists())
                 file.mkdir();
         }catch (Exception e) {
-            return false;
+            System.err.println("Error while creating " + nameOfFolder + ". Err : " + e.toString());
         }
-        return true;
     }
 
     private String getBase64Decoded(String encodedString) {

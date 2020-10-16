@@ -116,7 +116,6 @@ public class FileConverter {
      */
 
     public void PDF2PNG(String sourceFilePath, String targetFolder) throws Exception {
-        sourceFilePath = sourceFilePath + ".pdf";
         File sourceFile = new File(sourceFilePath);
         File destinationFile = new File(targetFolder);
         if(!destinationFile.exists()) {
