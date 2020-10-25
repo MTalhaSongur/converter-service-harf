@@ -67,6 +67,8 @@ public class JSONManifest {
         }catch (JsonProcessingException e) {
             System.err.println(e.toString());
         }
+
+        System.out.println(jsonString);
     }
 
     public void anticipatePagePaths(int pageSize, File sourceFile, String extension) {

@@ -43,37 +43,26 @@ public class ConverterController {
             switch (extension) {
                 case "pptx":
                     converter.PPTX2PNG(decodedBody, jsonManifest);
-                    while (true) {
-                        String jsonResponse = jsonManifest.getinitialJSONResponse();
-                        if(jsonResponse != null)
-                            return jsonResponse;
-                        Thread.sleep(100);
-                    }
+                    break;
                 case "pdf":
-                    jsonManifest = new JSONManifest();
                     converter.PDF2PNG(decodedBody, "pdf", jsonManifest);
-                    while (true) {
-                        String jsonResponse = jsonManifest.getinitialJSONResponse();
-                        if(jsonResponse != null)
-                            return jsonResponse;
-                        Thread.sleep(100);
-                    }
+                    break;
                 case "docx":
                     //Get the name of the file without extension.
                     String parentFolder = new File(decodedBody).getParent();
                     String fileName = Paths.get(decodedBody).getFileName().toString().replaceFirst("[.][^.]+$", "");
                     converter.DOCX2PDF(decodedBody, parentFolder);
                     converter.PDF2PNG(parentFolder + "/" + fileName + ".pdf", "docx", jsonManifest);
-                    while (true) {
-                        String jsonResponse = jsonManifest.getinitialJSONResponse();
-                        if(jsonResponse != null)
-                            return jsonResponse;
-                        Thread.sleep(100);
-                    }
+                    break;
                 default:
                     return "Error: Extension : + " + extension + " is not recognized.";
             }
-
+            while (true) {
+                String jsonResponse = jsonManifest.getinitialJSONResponse();
+                if(jsonResponse != null)
+                    return jsonResponse;
+                Thread.sleep(100);
+            }
         }catch (Exception e){
             return e.toString();
         }
