@@ -10,7 +10,6 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-
 import com.objects.JSONManifest;
 import com.objects.Pages;
 import fr.opensagres.poi.xwpf.converter.pdf.PdfConverter;
@@ -27,7 +26,6 @@ import org.springframework.util.FileSystemUtils;
 import javax.imageio.ImageIO;
 
 @Component
-@Async
 public class FileConverter {
 
     private InputStream inStream;
@@ -112,7 +110,8 @@ public class FileConverter {
     }
      */
 
-    public void PDF2PNG(String sourceFilePath, String initialExtension) throws Exception {
+    @Async
+    public void PDF2PNG(String sourceFilePath, String initialExtension, JSONManifest jsonManifest) throws Exception {
         File sourceFile = new File(sourceFilePath);
         File destinationFile = new File(sourceFile.getParent());
         if(!destinationFile.exists()) {
@@ -139,7 +138,6 @@ public class FileConverter {
         setPageSize(list.size());
 
         //Prepare the json file for rest response.
-        JSONManifest jsonManifest = new JSONManifest();
         initiateJSONManifest(jsonManifest, new File(sourceFilePath), pageSize, initialExtension);
         jsonManifest.sendJSON();
         //-
@@ -159,6 +157,7 @@ public class FileConverter {
         System.out.println("Converted Images are saved at -> "+ destinationFile.getAbsolutePath());
     }
 
+    @Async
     public void PPTX2PNG(String path, JSONManifest jsonManifest) throws Exception {
         File sourceFile = new File(path);
         File destinationFile = sourceFile.getParentFile();
@@ -217,6 +216,7 @@ public class FileConverter {
         }
 
         System.out.println("Converted Images are saved at -> "+ destinationFile.getAbsolutePath());
+        jsonManifest = null;
     }
 
     public void DOCX2PDF(String docPath, String pdfPath) {

@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Base64;
 
 @RestController
@@ -40,26 +39,37 @@ public class ConverterController {
             return "Error: No extension detected.";
 
         try {
+            JSONManifest jsonManifest = new JSONManifest();
             switch (extension) {
                 case "pptx":
-                    JSONManifest jsonManifest = new JSONManifest();
                     converter.PPTX2PNG(decodedBody, jsonManifest);
                     while (true) {
                         String jsonResponse = jsonManifest.getinitialJSONResponse();
-                        if(jsonManifest != null)
+                        if(jsonResponse != null)
                             return jsonResponse;
+                        Thread.sleep(100);
                     }
                 case "pdf":
-                    converter.PDF2PNG(decodedBody, "pdf");
-                    break;
+                    jsonManifest = new JSONManifest();
+                    converter.PDF2PNG(decodedBody, "pdf", jsonManifest);
+                    while (true) {
+                        String jsonResponse = jsonManifest.getinitialJSONResponse();
+                        if(jsonResponse != null)
+                            return jsonResponse;
+                        Thread.sleep(100);
+                    }
                 case "docx":
-                    //Sloppy way of converting docx files to pdf and will take longer. However, Apache POI cant do this alone and other libraries requires MS word to be installed on the runner machine.
                     //Get the name of the file without extension.
                     String parentFolder = new File(decodedBody).getParent();
                     String fileName = Paths.get(decodedBody).getFileName().toString().replaceFirst("[.][^.]+$", "");
                     converter.DOCX2PDF(decodedBody, parentFolder);
-                    converter.PDF2PNG(parentFolder + "/" + fileName + ".pdf", "docx");
-                    break;
+                    converter.PDF2PNG(parentFolder + "/" + fileName + ".pdf", "docx", jsonManifest);
+                    while (true) {
+                        String jsonResponse = jsonManifest.getinitialJSONResponse();
+                        if(jsonResponse != null)
+                            return jsonResponse;
+                        Thread.sleep(100);
+                    }
                 default:
                     return "Error: Extension : + " + extension + " is not recognized.";
             }
@@ -67,10 +77,6 @@ public class ConverterController {
         }catch (Exception e){
             return e.toString();
         }
-
-        //return "path:" + rootLocation.resolve("outputs/images").toAbsolutePath() + "/" + Long.toString(converter.getID()) + ",size:" + converter.getPageSize() + ",width:" + converter.getWidth() + ",height:" + converter.getHeight();
-        converter = null;
-        return "DONE";
     }
     //Utilities-------------------------------------------------------------------
 

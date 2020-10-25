@@ -15,6 +15,7 @@ public class JSONManifest {
 
     public JSONManifest() {
         pagesArrayList = new ArrayList<>();
+        initialJSONResponse = null;
     }
 
     public String getDocumentPath() {
