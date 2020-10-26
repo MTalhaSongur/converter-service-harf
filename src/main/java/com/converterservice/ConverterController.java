@@ -80,7 +80,6 @@ public class ConverterController {
     }
 
     private String getBase64Decoded(String encodedString) {
-        //Decode the given string encoded in Base64
         byte[] decodedBytes = Base64.getDecoder().decode(encodedString);
         return new String(decodedBytes);
     }
