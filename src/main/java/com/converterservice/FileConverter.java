@@ -145,7 +145,7 @@ public class FileConverter {
         int pageNumber = 1;
         for (PDPage page : list) {
             BufferedImage image = page.convertToImage();
-            File outputfile = new File(destinationFile.getAbsolutePath() + "/" + pageNumber +".png");
+            File outputfile = new File(destinationFile.getAbsolutePath() + File.separator + sourceFile.getName().replaceFirst("[.][^.]+$", "") + "_" + initialExtension + "_converted_" + pageNumber + ".png");
             System.out.println("Image Created -> "+ outputfile.getName());
             ImageIO.write(image, "png", outputfile);
             jsonManifest.updatePagePath(pageNumber - 1, outputfile.getAbsolutePath());
@@ -155,6 +155,7 @@ public class FileConverter {
         }
         document.close();
         System.out.println("Converted Images are saved at -> "+ destinationFile.getAbsolutePath());
+        jsonManifest = null;
     }
 
     @Async
@@ -207,7 +208,7 @@ public class FileConverter {
                 //Just Ignore. For some reason Apache POI throws an exception every time it finishes rendering a page.
             }
 
-            File outputfile = new File(destinationFile.getAbsolutePath() + "/" + sourceFile.getName().replaceFirst("[.][^.]+$", "") + "_pptx_converted_" + (i + 1) + ".png");
+            File outputfile = new File(destinationFile.getAbsolutePath() + File.separator + sourceFile.getName().replaceFirst("[.][^.]+$", "") + "_pptx_converted_" + (i + 1) + ".png");
             System.out.println("Image Created -> "+ outputfile.getName());
             ImageIO.write(img, "png", outputfile);
             jsonManifest.updateIsDone(i, true);
@@ -256,7 +257,6 @@ public class FileConverter {
         }
 
         jsonManifest.anticipatePagePaths(pageSize, path, extension);
-
     }
 
     private Dimension processSlides() throws IOException{

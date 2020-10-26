@@ -1,5 +1,6 @@
 package com.objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -29,6 +30,7 @@ public class JSONManifest {
         pagesArrayList.add(pages);
     }
 
+    @JsonIgnore
     public String getinitialJSONResponse() {return initialJSONResponse;}
 
     public Pages getPage(int index) {
@@ -72,7 +74,7 @@ public class JSONManifest {
     public void anticipatePagePaths(int pageSize, File sourceFile, String extension) {
         ArrayList<String > initialPagePaths = new ArrayList<>();
         for (int i = 0; i < pageSize; i++) {
-             initialPagePaths.add(sourceFile.getParent() + "/" + sourceFile.getName().replaceFirst("[.][^.]+$", "") + "_" + extension +"_converted_" + (i + 1) + ".png");
+             initialPagePaths.add(sourceFile.getParent() + File.separator + sourceFile.getName().replaceFirst("[.][^.]+$", "") + "_" + extension +"_converted_" + (i + 1) + ".png");
         }
         final ObjectMapper mapper = new ObjectMapper();
         try {
