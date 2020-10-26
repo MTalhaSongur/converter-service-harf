@@ -1,24 +1,33 @@
 package com.converterservice;
 
+import com.objects.JSONManifest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 
 @RestController
 public class ConverterController {
 
-    private final Path rootLocation = Paths.get("filestorage");
+    @Autowired
+    private FileConverter converter;
 
-    @RequestMapping("/convert")
-    public String convert( @RequestBody String req) {
-        if(req == null || req.equals(""))
-            return "ERROR : No body received!! Cannot Convert Image";
+    @RequestMapping(
+            value = "/convert",
+            method = RequestMethod.POST,
+            produces = "application/json"
+    )
+    @ResponseBody
+    public ResponseEntity<String> convert(@RequestParam("filePath") String filePath) {
+        if(filePath == null || filePath.equals(""))
+            return ResponseEntity.badRequest().body("No body received, cannot convert file!!");
 
-        req = req.split("=")[0];
-        String decodedBody = getBase64Decoded(req);
+        filePath = filePath.split("=")[0];
+        String decodedBody = getBase64Decoded(filePath);
         String extension = null;
         int i = decodedBody.lastIndexOf('.');
         if (i >= 0) {
@@ -26,63 +35,38 @@ public class ConverterController {
             System.out.println("Extension from : " + decodedBody + " is : " + extension);
         }
         else
-            return "Error: No extension detected.";
+            return ResponseEntity.badRequest().body("Extension from " + decodedBody + " not found");
 
-        FileConverter converter = new FileConverter();
         try {
-            generateOutputFolder(rootLocation.toString(), "outputs");
-            generateOutputFolder(rootLocation.resolve("outputs").toString(), "images");
-            generateOutputFolder(rootLocation.resolve("outputs/images/").toString(), Long.toString(converter.getID()));
+            JSONManifest jsonManifest = new JSONManifest();
+            //Note: These conversion methods used are working async to the main thread.
             switch (extension) {
                 case "pptx":
-                    converter.PPTX2PNG(decodedBody,rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString());
+                    converter.PPTX2PNG(decodedBody, jsonManifest);
                     break;
                 case "pdf":
-                    converter.PDF2PNG(decodedBody, rootLocation.resolve("outputs/images/" + converter.getID()).toString());
+                    converter.PDF2PNG(decodedBody, "pdf", jsonManifest);
                     break;
                 case "docx":
-                    //Sloppy way of converting docx files to pdf and will take longer. However, Apache POI cant do this alone and other libraries requires MS word to be installed on the runner machine.
                     //Get the name of the file without extension.
+                    String parentFolder = new File(decodedBody).getParent();
                     String fileName = Paths.get(decodedBody).getFileName().toString().replaceFirst("[.][^.]+$", "");
-                    generateOutputFolder(rootLocation.resolve("outputs").toString(), "pdfs");
-                    generateOutputFolder(rootLocation.resolve("outputs/pdfs/").toString(), Long.toString(converter.getID()));
-                    converter.DOCX2PDF(decodedBody, rootLocation.resolve("outputs/pdfs/" + converter.getID()).toString());
-                    converter.PDF2PNG(rootLocation.resolve("outputs/pdfs/" + converter.getID() + "/" + fileName).toString(), rootLocation.resolve("outputs/images/" + converter.getID()).toString());
+                    converter.DOCX2PDF(decodedBody, parentFolder);
+                    converter.PDF2PNG(parentFolder + "/" + fileName + ".pdf", "docx", jsonManifest);
                     break;
                 default:
-                    return "Error: Extension : + " + extension + " is not recognized.";
+                    return ResponseEntity.badRequest().body("Error: Extension : + " + extension + " is not recognized.");
             }
-
+            while (true) {
+                String jsonResponse = jsonManifest.getinitialJSONResponse();
+                if(jsonResponse != null)
+                    return ResponseEntity.ok(jsonResponse);
+                Thread.sleep(100);
+            }
         }catch (Exception e){
-            return e.toString();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error while in conversion. Err : " + e.toString());
         }
-
-        //return "path:" + rootLocation.resolve("outputs/images").toAbsolutePath() + "/" + Long.toString(converter.getID()) + ",size:" + converter.getPageSize() + ",width:" + converter.getWidth() + ",height:" + converter.getHeight();
-        converter = null;
-        return "DONE";
     }
-
-    @GetMapping("/convertdefault")
-    public String convertDefault(){
-
-        //constructAndSendJSON();
-        FileConverter converter = new FileConverter();
-        try {
-            generateOutputFolder(rootLocation.toString(), "outputs");
-            generateOutputFolder(rootLocation.resolve("outputs").toString(), "images");
-            generateOutputFolder(rootLocation.resolve("outputs/images/").toString(), Long.toString(converter.getID()));
-            generateOutputFolder(rootLocation.resolve("outputs").toString(), "pdfs");
-            generateOutputFolder(rootLocation.resolve("outputs/pdfs/").toString(), Long.toString(converter.getID()));
-            converter.DOCX2PDF(rootLocation.resolve("inputs/deneme.docx").toString(), rootLocation.resolve("outputs/pdfs/" + converter.getID()).toString());
-            converter.PDF2PNG(rootLocation.resolve("outputs/pdfs/" + converter.getID()).toString(), rootLocation.resolve("outputs/images/" + converter.getID() + "/").toString());
-            //converter.PPTX2PNG(rootLocation.resolve("inputs/deneme.pptx").toString(),rootLocation.resolve("outputs/images/" + converter.getID()).toAbsolutePath().toString());
-        }catch (Exception e){
-            return e.toString();
-        }
-
-        return "path:" + rootLocation.resolve("outputs/images").toAbsolutePath() + "/" + converter.getID() + ",size:" + converter.getPageSize() + ",width:" + converter.getWidth() + ",height:" + converter.getHeight();
-    }
-
     //Utilities-------------------------------------------------------------------
 
     private void generateOutputFolder(String folder, String nameOfFolder) {
@@ -96,7 +80,6 @@ public class ConverterController {
     }
 
     private String getBase64Decoded(String encodedString) {
-        //Decode the given string encoded in Base64
         byte[] decodedBytes = Base64.getDecoder().decode(encodedString);
         return new String(decodedBytes);
     }

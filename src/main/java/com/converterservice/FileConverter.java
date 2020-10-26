@@ -10,7 +10,6 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-
 import com.objects.JSONManifest;
 import com.objects.Pages;
 import fr.opensagres.poi.xwpf.converter.pdf.PdfConverter;
@@ -20,13 +19,13 @@ import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 
 import javax.imageio.ImageIO;
 
-import static java.lang.System.out;
-
-//This class is responsible for getting pptx file from sender and returning the .png file instead.
+@Component
 public class FileConverter {
 
     private InputStream inStream;
@@ -39,10 +38,6 @@ public class FileConverter {
 
     public FileConverter() {
         ID = getRandomNumber(10000000, 99999999);
-    }
-
-    public long getID() {
-        return ID;
     }
 
     public int getPageSize() {
@@ -115,19 +110,20 @@ public class FileConverter {
     }
      */
 
-    public void PDF2PNG(String sourceFilePath, String targetFolder) throws Exception {
+    @Async
+    public void PDF2PNG(String sourceFilePath, String initialExtension, JSONManifest jsonManifest) throws Exception {
         File sourceFile = new File(sourceFilePath);
-        File destinationFile = new File(targetFolder);
+        File destinationFile = new File(sourceFile.getParent());
         if(!destinationFile.exists()) {
-            out.println("No folder detected at given path. Creating a new folder");
+            System.out.println("No folder detected at given path. Creating a new folder");
             destinationFile.mkdir();
-            out.println("Folder Created  at-> "+ destinationFile.getAbsolutePath());
+            System.out.println("Folder Created  at-> "+ destinationFile.getAbsolutePath());
         }
         if(!sourceFile.exists()) {
             System.err.println("ERROR : Source folder does not exists!!!");
             return;
         }
-        out.println("Images copied to Folder: "+ destinationFile.getName());
+        System.out.println("Images copied to Folder: "+ destinationFile.getName());
         PDDocument document = PDDocument.load(sourceFilePath);
         List<PDPage> list = document.getDocumentCatalog().getAllPages();
 
@@ -136,22 +132,21 @@ public class FileConverter {
         setHeight(list.get(0).convertToImage().getHeight());
         //-
 
-        out.println("Total files to be converted -> "+ list.size());
+        System.out.println("Total files to be converted -> "+ list.size());
 
         //Set the page size
         setPageSize(list.size());
 
         //Prepare the json file for rest response.
-        JSONManifest jsonManifest = new JSONManifest();
-        initiateJSONManifest(jsonManifest, ID, sourceFilePath, pageSize);
+        initiateJSONManifest(jsonManifest, new File(sourceFilePath), pageSize, initialExtension);
         jsonManifest.sendJSON();
         //-
 
         int pageNumber = 1;
         for (PDPage page : list) {
             BufferedImage image = page.convertToImage();
-            File outputfile = new File(targetFolder + "/" + pageNumber +".png");
-            out.println("Image Created -> "+ outputfile.getName());
+            File outputfile = new File(destinationFile.getAbsolutePath() + File.separator + sourceFile.getName().replaceFirst("[.][^.]+$", "") + "_" + initialExtension + "_converted_" + pageNumber + ".png");
+            System.out.println("Image Created -> "+ outputfile.getName());
             ImageIO.write(image, "png", outputfile);
             jsonManifest.updatePagePath(pageNumber - 1, outputfile.getAbsolutePath());
             jsonManifest.updateIsDone(pageNumber - 1, true);
@@ -159,16 +154,18 @@ public class FileConverter {
             jsonManifest.sendJSON();
         }
         document.close();
-        out.println("Converted Images are saved at -> "+ destinationFile.getAbsolutePath());
+        System.out.println("Converted Images are saved at -> "+ destinationFile.getAbsolutePath());
+        jsonManifest = null;
     }
 
-    public void PPTX2PNG(String path, String targetFolder) throws Exception {
+    @Async
+    public void PPTX2PNG(String path, JSONManifest jsonManifest) throws Exception {
         File sourceFile = new File(path);
-        File destinationFile = new File(targetFolder);
+        File destinationFile = sourceFile.getParentFile();
         if(!destinationFile.exists()) {
-            out.println("No folder detected at given path. Creating a new folder");
+            System.out.println("No folder detected at given path. Creating a new folder");
             destinationFile.mkdir();
-            out.println("Folder Created  at-> "+ destinationFile.getAbsolutePath());
+            System.out.println("Folder Created  at-> "+ destinationFile.getAbsolutePath());
         }
         if(!sourceFile.exists()) {
             System.err.println("ERROR : Source folder does not exists!!!");
@@ -194,9 +191,7 @@ public class FileConverter {
         setPageSize(slides.size());
 
         //Set the json manifest and send it before any pages are actually rendered.
-        JSONManifest jsonManifest = new JSONManifest();
-        initiateJSONManifest(jsonManifest, ID, path, slides.size());
-        jsonManifest.sendJSON();
+        initiateJSONManifest(jsonManifest, new File(path), slides.size(), "pptx");
 
         for (int i = 0; i < slides.size(); i++) {
             BufferedImage img = new BufferedImage((int)Math.ceil(pgsize.width*zoom), (int)Math.ceil(pgsize.height*zoom), BufferedImage.TYPE_INT_RGB);
@@ -213,15 +208,16 @@ public class FileConverter {
                 //Just Ignore. For some reason Apache POI throws an exception every time it finishes rendering a page.
             }
 
-            File outputfile = new File(targetFolder + "/" + (i + 1) +".png");
-            out.println("Image Created -> "+ outputfile.getName());
+            File outputfile = new File(destinationFile.getAbsolutePath() + File.separator + sourceFile.getName().replaceFirst("[.][^.]+$", "") + "_pptx_converted_" + (i + 1) + ".png");
+            System.out.println("Image Created -> "+ outputfile.getName());
             ImageIO.write(img, "png", outputfile);
             jsonManifest.updateIsDone(i, true);
             jsonManifest.updatePagePath(i, outputfile.getAbsolutePath());
             jsonManifest.sendJSON();
         }
 
-        out.println("Converted Images are saved at -> "+ targetFolder);
+        System.out.println("Converted Images are saved at -> "+ destinationFile.getAbsolutePath());
+        jsonManifest = null;
     }
 
     public void DOCX2PDF(String docPath, String pdfPath) {
@@ -251,15 +247,16 @@ public class FileConverter {
         return status;
     }
 
-    private void initiateJSONManifest(JSONManifest jsonManifest, long id, String path, int pageSize) {
-        jsonManifest.setDocumentPath(path);
-        jsonManifest.setId(id);
+    private void initiateJSONManifest(JSONManifest jsonManifest, File path, int pageSize, String extension) {
+        jsonManifest.setDocumentPath(path.getAbsolutePath());
 
         for(int i = 0; i < pageSize; i++) {
             Pages page = new Pages();
             page.setPageNumber(i + 1);
             jsonManifest.addToPages(page);
         }
+
+        jsonManifest.anticipatePagePaths(pageSize, path, extension);
     }
 
     private Dimension processSlides() throws IOException{

@@ -1,17 +1,20 @@
 package com.objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class JSONManifest {
     private String documentPath;
-    private long id;
     private ArrayList<Pages> pagesArrayList = null;
+    private String initialJSONResponse = null;
 
     public JSONManifest() {
         pagesArrayList = new ArrayList<>();
+        initialJSONResponse = null;
     }
 
     public String getDocumentPath() {
@@ -23,17 +26,12 @@ public class JSONManifest {
         this.documentPath = documentName;
     }
 
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
     public void addToPages(Pages pages) {
         pagesArrayList.add(pages);
     }
+
+    @JsonIgnore
+    public String getinitialJSONResponse() {return initialJSONResponse;}
 
     public Pages getPage(int index) {
         try {
@@ -68,6 +66,22 @@ public class JSONManifest {
             jsonString = objectMapper.writeValueAsString(this);
         }catch (JsonProcessingException e) {
             System.err.println(e.toString());
+        }
+
+        System.out.println(jsonString);
+    }
+
+    public void anticipatePagePaths(int pageSize, File sourceFile, String extension) {
+        ArrayList<String > initialPagePaths = new ArrayList<>();
+        for (int i = 0; i < pageSize; i++) {
+             initialPagePaths.add(sourceFile.getParent() + File.separator + sourceFile.getName().replaceFirst("[.][^.]+$", "") + "_" + extension +"_converted_" + (i + 1) + ".png");
+        }
+        final ObjectMapper mapper = new ObjectMapper();
+        try {
+            initialJSONResponse = mapper.writeValueAsString(initialPagePaths);
+        }
+        catch (JsonProcessingException e) {
+            System.err.println("Error while converting Anticipated path list to json response. Err : " + e.toString());
         }
     }
 }
