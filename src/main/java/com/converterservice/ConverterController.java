@@ -2,10 +2,11 @@ package com.converterservice;
 
 import com.objects.JSONManifest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 
@@ -15,17 +16,15 @@ public class ConverterController {
     @Autowired
     private FileConverter converter;
 
-    private final Path rootLocation = Paths.get("filestorage");
-
     @RequestMapping(
             value = "/convert",
             method = RequestMethod.POST,
             produces = "application/json"
     )
     @ResponseBody
-    public String convert(@RequestParam("filePath") String filePath) {
+    public ResponseEntity<String> convert(@RequestParam("filePath") String filePath) {
         if(filePath == null || filePath.equals(""))
-            return "ERROR : No body received!! Cannot Convert Image";
+            return ResponseEntity.badRequest().body("No body received, cannot convert file!!");
 
         filePath = filePath.split("=")[0];
         String decodedBody = getBase64Decoded(filePath);
@@ -36,10 +35,11 @@ public class ConverterController {
             System.out.println("Extension from : " + decodedBody + " is : " + extension);
         }
         else
-            return "Error: No extension detected.";
+            return ResponseEntity.badRequest().body("Extension from " + decodedBody + " not found");
 
         try {
             JSONManifest jsonManifest = new JSONManifest();
+            //Note: These conversion methods used are working async to the main thread.
             switch (extension) {
                 case "pptx":
                     converter.PPTX2PNG(decodedBody, jsonManifest);
@@ -55,16 +55,16 @@ public class ConverterController {
                     converter.PDF2PNG(parentFolder + "/" + fileName + ".pdf", "docx", jsonManifest);
                     break;
                 default:
-                    return "Error: Extension : + " + extension + " is not recognized.";
+                    return ResponseEntity.badRequest().body("Error: Extension : + " + extension + " is not recognized.");
             }
             while (true) {
                 String jsonResponse = jsonManifest.getinitialJSONResponse();
                 if(jsonResponse != null)
-                    return jsonResponse;
+                    return ResponseEntity.ok(jsonResponse);
                 Thread.sleep(100);
             }
         }catch (Exception e){
-            return e.toString();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error while in conversion. Err : " + e.toString());
         }
     }
     //Utilities-------------------------------------------------------------------

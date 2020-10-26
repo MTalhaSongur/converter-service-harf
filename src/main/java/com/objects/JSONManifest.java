@@ -1,9 +1,7 @@
 package com.objects;
 
-import com.converterservice.FileConverter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.autoconfigure.amqp.AbstractRabbitListenerContainerFactoryConfigurer;
 
 import java.io.File;
 import java.util.ArrayList;
